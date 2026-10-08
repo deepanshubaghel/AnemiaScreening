@@ -1,0 +1,26 @@
+# Requires Streamlit >= 1.51 for switchable custom light/dark themes.
+# Select ⋮ > Settings > Theme > Light / Dark / Use system setting in the app.
+
+[theme.light]
+primaryColor = "#175D88"
+backgroundColor = "#F8FAFD"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#172A40"
+borderColor = "#CBD8E7"
+
+[theme.dark]
+primaryColor = "#65BDF0"
+backgroundColor = "#0E1622"
+secondaryBackgroundColor = "#1A293B"
+textColor = "#ECF3FA"
+borderColor = "#42546B"
+
+[theme.light.sidebar]
+backgroundColor = "#F1F5FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#172A40"
+
+[theme.dark.sidebar]
+backgroundColor = "#101E2C"
+secondaryBackgroundColor = "#1A293B"
+textColor = "#ECF3FA"
