@@ -1,4 +1,4 @@
-# MAViA-7Net — Pregnancy Anemia Screening
+# Pregnancy Anemia Screening
 
 **Ready-to-run, two-checkpoint Streamlit app.** Both EfficientNet-B0 checkpoints include the original V5.1 model weights *plus* reconstructed CBC training-time preprocessing. No CSV upload, fold selection, or model selection is needed for end users.
 
