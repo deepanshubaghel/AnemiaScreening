@@ -7,7 +7,6 @@
 Python 3.10–3.13 recommended (with a compatible PyTorch/TorchVision pair).
 
 ```bash
-cd mavia_ready_to_run
 python -m pip install -r requirements.txt
 python verify.py
 python -m streamlit run app.py
