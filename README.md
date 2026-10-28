@@ -40,7 +40,7 @@ The original `.pt` files did not contain these fitted statistics. This deploymen
 ### Files
 
 ```
-mavia_ready_to_run/
+AnemiaScreening/
 ├── app.py                  # Patient-facing UI
 ├── model.py                # V5.1 neural network
 ├── router.py               # Automatic model selection
