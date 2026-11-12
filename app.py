@@ -208,12 +208,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Streamlit owns the native app palette. Its Settings menu exposes Light, Dark,
-# and Use system setting because both [theme.light] and [theme.dark] exist.
-# Never force native widget foreground/background colors using CSS: those must
-# continue to react to the visitor's active Streamlit theme.
-
-# st.caption("Appearance: ⋮ menu → Settings → Theme → Light, Dark, or Use system setting.")
 
 # ----------------------------- Patient -----------------------------
 with st.container(border=True):
