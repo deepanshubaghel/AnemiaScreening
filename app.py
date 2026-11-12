@@ -28,7 +28,6 @@ VIEW_INFO = [
 ]
 
 CBC_FIELDS = [
-    ("cbc_Age", "Age", "years", "28", 1.0, 0.0, 120.0),
     ("cbc_TRBC", "RBC / TRBC", "10⁶/µL", "3.10", 0.01, 0.0, 10.0),
     ("cbc_PCV", "PCV / HCT", "%", "30.0", 0.1, 0.0, 80.0),
     ("cbc_MCV", "MCV", "fL", "88.0", 0.1, 0.0, 200.0),
@@ -85,14 +84,13 @@ st.markdown(
     line-height: 1.55;
     max-width: 960px;
 }
-.eyebrow, .section-kicker {
+.eyebrow {
     font-size: .7rem;
     font-weight: 800;
     letter-spacing: .11em;
     text-transform: uppercase;
 }
 .eyebrow { opacity: .85; margin-bottom: .55rem; }
-.section-kicker { opacity: .80; margin-bottom: .25rem; color: inherit; }
 .helper { opacity: .90; font-size: .91rem; line-height: 1.5; color: inherit; }
 .route-pill {
     display: inline-flex;
@@ -211,15 +209,19 @@ st.markdown(
 
 # ----------------------------- Patient -----------------------------
 with st.container(border=True):
-    st.markdown('<div class="section-kicker">01 · Patient information</div>', unsafe_allow_html=True)
-    st.subheader("Patient and hemoglobin")
-    c1, c2, c3 = st.columns([1.15, 1.0, 1.0], gap="large")
+    st.subheader("Patient details")
+    c1, c2, c3 = st.columns(3, gap="large")
     with c1:
         patient_id = st.text_input("Patient / Study ID", placeholder="Optional")
     with c2:
-        center = st.selectbox(
-            "Study center",
-            ["Not specified", "Dhanbad", "Kolkata", "Rims", "Sadar"],
+        age = st.number_input(
+            "Age (years)",
+            min_value=0,
+            max_value=120,
+            value=None,
+            step=1,
+            placeholder="e.g. 28",
+            key="patient_age",
         )
     with c3:
         hb = st.number_input(
@@ -231,13 +233,40 @@ with st.container(border=True):
             format="%.1f",
             placeholder="Optional, e.g. 9.2",
         )
+
+    c4, c5, c6 = st.columns(3, gap="large")
+    with c4:
+        place = st.text_input("Place / Village / Town", placeholder="Enter place")
+    with c5:
+        district = st.text_input("District", placeholder="Enter district")
+    with c6:
+        state = st.text_input("State", placeholder="Enter state")
+
+    c7, c8, c9 = st.columns(3, gap="large")
+    with c7:
+        center = st.text_input("Study center", placeholder="Enter hospital or study center")
+    with c8:
+        pregnancy_status = st.selectbox(
+            "Pregnancy status",
+            ["Not specified", "Pregnant", "Not pregnant"],
+            key="pregnancy_status",
+        )
+    with c9:
+        trimester = st.selectbox(
+            "Trimester",
+            ["First trimester", "Second trimester", "Third trimester", "Unknown"],
+            index=None,
+            placeholder=("Select trimester" if pregnancy_status == "Pregnant" else "Not applicable"),
+            disabled=pregnancy_status != "Pregnant",
+            key="patient_trimester",
+        )
     st.caption(
-        "Hb is optional and is shown only as an independent study-reference classification. It is not passed into these no-Hb neural-network checkpoints."
+        "Hemoglobin is optional and used only for an independent study-reference comparison. "
+        "Location and pregnancy details are study information and do not affect the current model prediction."
     )
 
 # ----------------------------- CBC -----------------------------
 with st.container(border=True):
-    st.markdown('<div class="section-kicker">02 · Complete blood count</div>', unsafe_allow_html=True)
     st.subheader("CBC parameters")
     st.markdown(
         '<div class="helper">Enter normal laboratory values directly. Leave a field blank only when that CBC measurement is unavailable; missing values are handled internally using the selected checkpoint\'s training-time preprocessing.</div>',
@@ -245,7 +274,8 @@ with st.container(border=True):
     )
     st.write("")
 
-    raw_values: dict[str, float | None] = {}
+    # Age stays in the checkpoint's nine-feature CBC vector, even though it's entered in Patient details.
+    raw_values: dict[str, float | None] = {"cbc_Age": float(age) if age is not None else None}
     cbc_columns = st.columns(3, gap="large")
     for index, (key, label, unit, example, step, minimum, maximum) in enumerate(CBC_FIELDS):
         with cbc_columns[index % 3]:
@@ -261,8 +291,8 @@ with st.container(border=True):
 
 # ----------------------------- Images -----------------------------
 with st.container(border=True):
-    st.markdown('<div class="section-kicker">03 · Pallor images</div>', unsafe_allow_html=True)
     st.subheader("Patient images")
+    st.markdown("#### Pallor photographs")
     st.caption(
         "Upload every available view. Seven views use the complete-view checkpoint automatically; one to six views use the missing-view checkpoint automatically."
     )
@@ -288,8 +318,48 @@ with st.container(border=True):
                 except Exception:
                     pass
 
+    # ----------------------- PBS microscopy preview -----------------------
+    # This independent, future-facing uploader has no connection to model inputs.
+    # Keep it strictly outside the seven-view `uploads` dictionary and inference.
+    st.divider()
+    st.markdown("#### PBS microscopy · Coming soon")
+    st.caption("Demo preview only · Microscopic image screening will be available in a future update.")
+    st.markdown("Upload **2–5 images each** for **40×** and **100×** magnification to preview your images. This section is optional for today's screening.")
+
+    pbs_cols = st.columns(2, gap="large")
+    for col, magnification in zip(pbs_cols, ("40×", "100×")):
+        with col:
+            pbs_files = st.file_uploader(
+                f"PBS microscopic images — {magnification}",
+                type=["jpg", "jpeg", "png", "webp"],
+                accept_multiple_files=True,
+                key=f"pbs_{magnification}",
+                help="Upload between 2 and 5 images for this magnification; preview only.",
+            )
+            if len(pbs_files) > 5:
+                st.warning(f"{magnification}: Maximum 5 images. Remove {len(pbs_files) - 5} extra image(s) to complete the preview set.")
+            elif len(pbs_files) == 1:
+                st.info(f"{magnification}: Add at least 1 more image for a complete preview set (2–5).")
+            elif 2 <= len(pbs_files) <= 5:
+                st.caption(f"{len(pbs_files)}/5 images selected · Preview ready")
+            else:
+                st.caption("2–5 images per magnification")
+
+            # Preview no more than five files, arranged in compact thumbnails.
+            if pbs_files:
+                thumb_cols = st.columns(2, gap="small")
+                for image_index, uploaded in enumerate(pbs_files[:5], start=1):
+                    with thumb_cols[(image_index - 1) % 2]:
+                        try:
+                            preview = open_upload(uploaded, f"PBS {magnification} image {image_index}")
+                            preview.thumbnail((270, 160))
+                            st.image(preview, caption=f"{magnification} · Image {image_index}", width="stretch")
+                        except ValueError:
+                            st.warning(f"Could not preview {uploaded.name}; please choose a valid image.")
+
 image_count = sum(value is not None for value in uploads.values())
-cbc_count = sum(value is not None for value in raw_values.values())
+lab_count = sum(raw_values[key] is not None for key, *_ in CBC_FIELDS)
+cbc_count = lab_count + int(age is not None)
 
 if image_count == 7:
     route_label = "Complete-view model · all 7 images"
@@ -300,11 +370,10 @@ else:
 
 # ----------------------------- Review -----------------------------
 with st.container(border=True):
-    st.markdown('<div class="section-kicker">04 · Review and screen</div>', unsafe_allow_html=True)
     st.subheader("Ready for screening")
     m1, m2, m3 = st.columns(3, gap="large")
     m1.metric("Images available", f"{image_count}/7")
-    m2.metric("CBC values entered", f"{cbc_count}/9")
+    m2.metric("Age + CBC values entered", f"{cbc_count}/9")
     m3.metric("Hemoglobin", "Optional" if hb is None else f"{hb:.1f} g/dL")
     st.markdown(
         f'<span class="route-pill">Automatic model selection: {escape(route_label)}</span>',
@@ -314,8 +383,8 @@ with st.container(border=True):
 
     if image_count == 0:
         st.info("Upload at least one pallor image to enable screening.")
-    if cbc_count == 0:
-        st.info("Enter at least one CBC measurement before screening. All available CBC values are recommended.")
+    if lab_count == 0:
+        st.info("Enter at least one laboratory CBC value before screening. Age alone is not sufficient.")
     elif cbc_count < 7:
         st.warning("Several CBC measurements are missing. Prediction reliability may be reduced; enter available values where possible.")
 
@@ -323,7 +392,7 @@ with st.container(border=True):
         "Run anemia screening",
         type="primary",
         width="stretch",
-        disabled=image_count == 0 or cbc_count == 0,
+        disabled=image_count == 0 or lab_count == 0,
     )
 
 # ----------------------------- Inference -----------------------------
@@ -353,7 +422,6 @@ if run:
         hb_result = hb_reference(hb)
 
         st.markdown("---")
-        st.markdown('<div class="section-kicker">Screening result</div>', unsafe_allow_html=True)
         st.subheader("Patient-level result")
 
         r1, r2, r3 = st.columns(3, gap="large")
